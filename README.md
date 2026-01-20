@@ -1,6 +1,6 @@
 # League of Legends Static API
 
-A daily-updated, file-based API for League of Legends champion data. 
+A daily-updated, file-based API for League of Legends champion data.
 Designed to be served with zero backend logic.
 
 ![Hextech Header](https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Heimerdinger_0.jpg)
@@ -8,7 +8,7 @@ Designed to be served with zero backend logic.
 ## 🚀 How it Works
 
 1. **Daily Cron Job**: A GitHub Action runs every day at midnight (UTC).
-2. **Fetch Data**: It queries the official Riot [Data Dragon](https://developer.riotgames.com/docs/lol#data-dragon) 
+2. **Fetch Data**: It queries the official Riot [Data Dragon](https://developer.riotgames.com/docs/lol#data-dragon)
 3. **Generate Files**: It processes the JSON and generates a static filesystem structure.
 4. **Deploy**: The resulting `docs/` folder is pushed to the `gh-pages` branch (or served directly).
 

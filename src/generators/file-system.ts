@@ -1,6 +1,8 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { Champion, Spell, Skin } from '../core/types.js';
+import { Readable } from 'stream';
+import { finished } from 'stream/promises';
+import { Champion } from '../core/types.js';
 
 const DIST_ROOT = './docs';
 
@@ -12,7 +14,33 @@ async function writeJsonEndpoint(filePath: string, content: any) {
     await fs.outputJson(filePath, content);
 }
 
+async function downloadAndSaveImage(filePathNoExt: string, imageUrl: string) {
+    try {
+        const response = await fetch(imageUrl);
+        if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`);
+        
+        const ext = path.extname(imageUrl) || '.png';
+        const fileParams = path.parse(filePathNoExt);
+        
+        await fs.ensureDir(fileParams.dir);
+
+        const imageFilename = `${fileParams.name}${ext}`;
+        const localImagePath = path.join(fileParams.dir, imageFilename);
+        
+        if (response.body) {
+             const fileStream = fs.createWriteStream(localImagePath);
+             await finished(Readable.fromWeb(response.body).pipe(fileStream));
+        }
+
+    } catch (error) {
+        console.error(`Error downloading image ${imageUrl}: ${error}`);
+        // Fallback to html redirect if download fails
+        await writeImageRedirect(filePathNoExt, imageUrl); 
+    }
+}
+
 async function writeImageRedirect(filePath: string, targetUrl: string) {
+
   const html = `
 <!DOCTYPE html>
 <html lang="en">
@@ -357,16 +385,16 @@ async function writeLandingPage(basePath: string, champions: Champion[]) {
             { id: 'title', label: 'Title' },
             { id: 'lore', label: 'Lore' },
             { id: 'json', label: 'Full JSON' },
-            { id: 'image', label: 'Splash Icon (Redir)' },
+            { id: 'image.png', label: 'Square Icon (PNG)' },
             { id: 'stats', label: 'Stats (JSON)' },
             { id: 'q/name', label: 'Q Name' },
             { id: 'q/description', label: 'Q Desc' },
-            { id: 'q/image', label: 'Q Image' },
+            { id: 'q/image.png', label: 'Q Image (PNG)' },
             { id: 'w/name', label: 'W Name' },
             { id: 'w/description', label: 'W Desc' },
             { id: 'e/name', label: 'E Name' },
             { id: 'r/name', label: 'R Name' },
-            { id: 'skins/default/image', label: 'Default Skin' }
+            { id: 'skins/default/image.jpg', label: 'Default Splash (JPG)' }
         ];
 
         const champSelect = document.getElementById('champ-select');
@@ -422,8 +450,6 @@ async function writeLandingPage(basePath: string, champions: Champion[]) {
 
             // Check if Image
             if(currentResource.includes('image')) {
-                // Since it's a redirect, we might want to show a link or try to load it in iframe
-                // But for redirect endpoints (html meta refresh), iframe works
                  contentViewer.innerHTML = \`<iframe src="\${validUrl}" frameborder="0"></iframe>\`;
                  return;
             }
@@ -487,7 +513,7 @@ export async function generateStaticApi(version: string, data: Champion[], baseP
     await writeJsonEndpoint(path.join(champPath, 'json'), champ);
 
     const champImgUrl = `https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champ.image.full}`;
-    await writeImageRedirect(path.join(champPath, 'image'), champImgUrl);
+    await downloadAndSaveImage(path.join(champPath, 'image'), champImgUrl);
 
     const spellKeys = ['q', 'w', 'e', 'r'];
     for (let i = 0; i < champ.spells.length; i++) {
@@ -501,17 +527,16 @@ export async function generateStaticApi(version: string, data: Champion[], baseP
         await writeEndpoint(path.join(spellPath, 'cooldown'), JSON.stringify(spell.cooldown)); // Cooldown is array
         
         const spellImgUrl = `https://ddragon.leagueoflegends.com/cdn/${version}/img/spell/${spell.image.full}`;
-        await writeImageRedirect(path.join(spellPath, 'image'), spellImgUrl);
+        await downloadAndSaveImage(path.join(spellPath, 'image'), spellImgUrl);
     }
 
-    // Passive
     if (champ.passive) {
         const passivePath = path.join(champPath, 'passive');
         await writeEndpoint(path.join(passivePath, 'name'), champ.passive.name);
         await writeEndpoint(path.join(passivePath, 'description'), champ.passive.description);
         
         const passiveImgUrl = `https://ddragon.leagueoflegends.com/cdn/${version}/img/passive/${champ.passive.image.full}`;
-        await writeImageRedirect(path.join(passivePath, 'image'), passiveImgUrl);
+        await downloadAndSaveImage(path.join(passivePath, 'image'), passiveImgUrl);
     }
 
     // Skins
@@ -522,8 +547,8 @@ export async function generateStaticApi(version: string, data: Champion[], baseP
             
             await writeEndpoint(path.join(skinPath, 'name'), skin.name);
             
-            const splashUrl = `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champ.id}_${skin.num}.jpg`;
-            await writeImageRedirect(path.join(skinPath, 'image'), splashUrl);
+           const splashUrl = `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champ.id}_${skin.num}.jpg`;
+            await downloadAndSaveImage(path.join(skinPath, 'image'), splashUrl);
         }
     }
   }

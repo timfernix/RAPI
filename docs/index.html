@@ -211,8 +211,8 @@
     <div class="particles"></div>
 
     <header>
-        <h1>League <span>RAPI</span></h1>
-        <p class="subtitle">File-based API of some kind</p>
+        <h1>League <span>Static API</span></h1>
+        <p class="subtitle">Daily Updated. Lightweight. File-based.</p>
     </header>
 
     <main>
@@ -252,16 +252,16 @@
             { id: 'title', label: 'Title' },
             { id: 'lore', label: 'Lore' },
             { id: 'json', label: 'Full JSON' },
-            { id: 'image', label: 'Splash Icon (Redir)' },
+            { id: 'image.png', label: 'Square Icon (PNG)' },
             { id: 'stats', label: 'Stats (JSON)' },
             { id: 'q/name', label: 'Q Name' },
             { id: 'q/description', label: 'Q Desc' },
-            { id: 'q/image', label: 'Q Image' },
+            { id: 'q/image.png', label: 'Q Image (PNG)' },
             { id: 'w/name', label: 'W Name' },
             { id: 'w/description', label: 'W Desc' },
             { id: 'e/name', label: 'E Name' },
             { id: 'r/name', label: 'R Name' },
-            { id: 'skins/default/image', label: 'Default Skin' }
+            { id: 'skins/default/image.jpg', label: 'Default Splash (JPG)' }
         ];
 
         const champSelect = document.getElementById('champ-select');
@@ -310,15 +310,11 @@
             previewArea.style.display = 'block';
             const path = urlOutput.textContent;
             
-            // Because we are serving locally or on pages, we use relative link
             const validUrl = '.' + path; 
 
             contentViewer.innerHTML = '<div style="color:var(--hextech-blue)">Loading...</div>';
 
-            // Check if Image
             if(currentResource.includes('image')) {
-                // Since it's a redirect, we might want to show a link or try to load it in iframe
-                // But for redirect endpoints (html meta refresh), iframe works
                  contentViewer.innerHTML = `<iframe src="${validUrl}" frameborder="0"></iframe>`;
                  return;
             }
@@ -338,7 +334,7 @@
         }
 
         function copyUrl() {
-            const url = window.location.origin + urlOutput.textContent;
+            const url = window.location.origin + '/RAPI/' + urlOutput.textContent;
             navigator.clipboard.writeText(url);
             alert('Copied absolute URL: ' + url);
         }
